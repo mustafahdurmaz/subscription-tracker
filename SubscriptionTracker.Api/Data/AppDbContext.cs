@@ -47,5 +47,18 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Payment>()
             .Property(p => p.Status)
             .HasConversion<int>();
+
+        // PostgreSQL: tüm DateTime kolonlarını "timestamp with time zone" yap.
+        // Aksi halde DateTime.UtcNow (Kind=Utc) yazarken Npgsql runtime hatası verir.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
+                {
+                    property.SetColumnType("timestamp with time zone");
+                }
+            }
+        }
     }
 }

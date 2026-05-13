@@ -1,0 +1,50 @@
+// /api/customers endpoint'leri.
+// İş mantığı yok — sadece HTTP -> Service çevirisi yapar.
+// Service null dönerse 404, yoksa uygun durum kodu.
+using Microsoft.AspNetCore.Mvc;
+using SubscriptionTracker.Api.Models.Dtos;
+using SubscriptionTracker.Api.Services;
+
+namespace SubscriptionTracker.Api.Controllers;
+
+[ApiController]
+[Route("api/customers")]
+public class CustomersController : ControllerBase
+{
+    private readonly ICustomerService _customerService;
+
+    public CustomersController(ICustomerService customerService)
+    {
+        _customerService = customerService;
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<CustomerResponseDto>> Create([FromBody] CustomerCreateDto dto)
+    {
+        var created = await _customerService.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<CustomerResponseDto>>> GetAll()
+    {
+        var customers = await _customerService.GetAllAsync();
+        return Ok(customers);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<CustomerResponseDto>> GetById(Guid id)
+    {
+        var customer = await _customerService.GetByIdAsync(id);
+        if (customer is null) return NotFound(new { error = "Müşteri bulunamadı." });
+        return Ok(customer);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var deleted = await _customerService.DeleteAsync(id);
+        if (!deleted) return NotFound(new { error = "Müşteri bulunamadı." });
+        return NoContent();
+    }
+}

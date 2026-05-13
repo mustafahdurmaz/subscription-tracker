@@ -1,13 +1,21 @@
 // Program.cs: uygulamanın giriş noktası. Tüm DI register'ları,
 // HTTP pipeline yapılandırması ve DB oluşturma burada.
 // Servis kayıtları (mock servisler, AppDbContext, Controllers, Swagger).
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using SubscriptionTracker.Api.Data;
+using SubscriptionTracker.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Services ---
-builder.Services.AddControllers();
+// Enum'lar JSON'da int yerine string olarak görünsün (örn: "Success" / "Active").
+// Hem response'larda hem request body'lerinde otomatik dönüşüm yapar.
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 // Swashbuckle Swagger (her ortamda açık — sunum için)
 builder.Services.AddEndpointsApiExplorer();
@@ -17,6 +25,11 @@ builder.Services.AddSwaggerGen();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+
+// Domain servisleri — DI registration. Scoped: her HTTP isteği için yeni instance.
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 var app = builder.Build();
 
