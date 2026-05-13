@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Subscription Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .tab-active { color: #2563eb; border-bottom-color: #2563eb; }
+        .tab-inactive { color: #6b7280; border-bottom-color: transparent; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<div class="max-w-6xl mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <header class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Subscription Tracker</h1>
+        <p class="text-gray-600 mt-1">Abonelik & otomatik ödeme hatırlatma uygulaması</p>
+    </header>
+
+    <!-- Toast / mesaj kutusu -->
+    <div id="toast" class="hidden fixed top-4 right-4 bg-white border-l-4 px-4 py-3 rounded shadow-lg z-50"></div>
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="flex space-x-6">
+            <button onclick="switchTab('customers')" id="tab-customers"
+                    class="py-3 px-1 border-b-2 font-medium tab-active">Müşteriler</button>
+            <button onclick="switchTab('subscriptions')" id="tab-subscriptions"
+                    class="py-3 px-1 border-b-2 font-medium tab-inactive">Abonelikler</button>
+            <button onclick="switchTab('payments')" id="tab-payments"
+                    class="py-3 px-1 border-b-2 font-medium tab-inactive">Ödemeler</button>
+        </nav>
+    </div>
+
+    <!-- ===================== MÜŞTERİLER ===================== -->
+    <section id="section-customers">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Form -->
+            <div class="md:col-span-1 bg-white rounded-lg shadow p-5 h-fit">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Yeni Müşteri</h2>
+                <form id="customer-form" class="space-y-3">
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1">Ad Soyad</label>
+                        <input name="fullName" required maxlength="200" class="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1">E-posta</label>
+                        <input name="email" type="email" required maxlength="200" class="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1">Telefon (ops.)</label>
+                        <input name="phoneNumber" maxlength="20" class="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700">
+                        Ekle
+                    </button>
+                </form>
+            </div>
+
+            <!-- Liste -->
+            <div class="md:col-span-2">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Müşteriler</h2>
+                <div id="customers-list" class="space-y-3"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== ABONELİKLER ===================== -->
+    <section id="section-subscriptions" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Form -->
+            <div class="md:col-span-1 bg-white rounded-lg shadow p-5 h-fit">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Yeni Abonelik</h2>
+                <form id="subscription-form" class="space-y-3">
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1">Müşteri</label>
+                        <select name="customerId" required class="w-full border rounded px-3 py-2 text-sm">
+                            <option value="">Seçin...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1">Servis Tipi</label>
+                        <select name="serviceType" required class="w-full border rounded px-3 py-2 text-sm">
+                            <option value="Electricity">Elektrik</option>
+                            <option value="Water">Su</option>
+                            <option value="Internet">İnternet</option>
+                            <option value="Gsm">GSM</option>
+                            <option value="NaturalGas">Doğalgaz</option>
+                            <option value="Other">Diğer</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1">Sağlayıcı</label>
+                        <input name="providerName" required maxlength="200" class="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1">Abonelik No</label>
+                        <input name="subscriptionNumber" required maxlength="100" class="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700">
+                        Ekle
+                    </button>
+                </form>
+            </div>
+
+            <!-- Liste -->
+            <div class="md:col-span-2">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Abonelikler</h2>
+                <div id="subscriptions-list" class="space-y-3"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== ÖDEMELER ===================== -->
+    <section id="section-payments" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Form -->
+            <div class="md:col-span-1 bg-white rounded-lg shadow p-5 h-fit">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Yeni Ödeme</h2>
+                <form id="payment-form" class="space-y-3">
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1">Abonelik</label>
+                        <select name="subscriptionId" required class="w-full border rounded px-3 py-2 text-sm">
+                            <option value="">Seçin...</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm text-gray-700 mb-1">Yıl</label>
+                            <input name="periodYear" type="number" required min="2000" max="2100" class="w-full border rounded px-3 py-2 text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-700 mb-1">Ay</label>
+                            <input name="periodMonth" type="number" required min="1" max="12" class="w-full border rounded px-3 py-2 text-sm" />
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700">
+                        Öde
+                    </button>
+                </form>
+            </div>
+
+            <!-- Liste -->
+            <div class="md:col-span-2">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Ödemeler</h2>
+                <div id="payments-list" class="space-y-3"></div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- ===================== Modal (özet / borç sorgu sonucu) ===================== -->
+<div id="modal" class="hidden fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div class="flex justify-between items-center px-5 py-3 border-b">
+            <h3 id="modal-title" class="text-lg font-semibold text-gray-900"></h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+        <div id="modal-body" class="px-5 py-4 text-sm"></div>
+    </div>
+</div>
+
+<script>
+    // =========================================================================
+    // Global state — basit cache. Refresh-on-action.
+    // =========================================================================
+    const state = {
+        customers: [],
+        subscriptions: [],
+        payments: []
+    };
+
+    // Servis tipi enum -> Türkçe
+    const serviceTypeLabel = {
+        Electricity: "Elektrik",
+        Water: "Su",
+        Internet: "İnternet",
+        Gsm: "GSM",
+        NaturalGas: "Doğalgaz",
+        Other: "Diğer"
+    };
+
+    // =========================================================================
+    // Yardımcılar
+    // =========================================================================
+    function showToast(message, type = "info") {
+        const toast = document.getElementById("toast");
+        const colors = {
+            info: "border-blue-500 text-blue-800",
+            success: "border-green-500 text-green-800",
+            error: "border-red-500 text-red-800"
+        };
+        toast.className = "fixed top-4 right-4 bg-white border-l-4 px-4 py-3 rounded shadow-lg z-50 " + (colors[type] || colors.info);
+        toast.textContent = message;
+        toast.classList.remove("hidden");
+        setTimeout(() => toast.classList.add("hidden"), 3500);
+    }
+
+    function fmtDate(iso) {
+        if (!iso) return "-";
+        return new Date(iso).toLocaleString("tr-TR");
+    }
+
+    function fmtMoney(n) {
+        return Number(n).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ₺";
+    }
+
+    function statusBadge(status) {
+        const map = {
+            Success: "bg-green-100 text-green-800",
+            Failed: "bg-red-100 text-red-800",
+            Active: "bg-green-100 text-green-800",
+            Inactive: "bg-gray-200 text-gray-700"
+        };
+        const cls = map[status] || "bg-gray-100 text-gray-700";
+        return `<span class="${cls} text-xs px-2 py-0.5 rounded">${status}</span>`;
+    }
+
+    async function api(method, path, body) {
+        const opts = { method, headers: { "Content-Type": "application/json" } };
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch(path, opts);
+        if (res.status === 204) return null;
+        let data;
+        try { data = await res.json(); } catch { data = null; }
+        if (!res.ok) {
+            const msg = (data && data.error) || `Hata ${res.status}`;
+            throw new Error(msg);
+        }
+        return data;
+    }
+
+    function openModal(title, htmlContent) {
+        document.getElementById("modal-title").textContent = title;
+        document.getElementById("modal-body").innerHTML = htmlContent;
+        document.getElementById("modal").classList.remove("hidden");
+    }
+    function closeModal() {
+        document.getElementById("modal").classList.add("hidden");
+    }
+
+    // =========================================================================
+    // Tab switching
+    // =========================================================================
+    function switchTab(name) {
+        for (const t of ["customers", "subscriptions", "payments"]) {
+            document.getElementById("section-" + t).classList.toggle("hidden", t !== name);
+            const btn = document.getElementById("tab-" + t);
+            btn.classList.toggle("tab-active", t === name);
+            btn.classList.toggle("tab-inactive", t !== name);
+        }
+    }
+
+    // =========================================================================
+    // CUSTOMERS
+    // =========================================================================
+    async function loadCustomers() {
+        try {
+            state.customers = await api("GET", "/api/customers");
+            renderCustomers();
+            renderCustomerSelect();
+        } catch (e) {
+            showToast("Müşteriler yüklenemedi: " + e.message, "error");
+        }
+    }
+
+    function renderCustomers() {
+        const root = document.getElementById("customers-list");
+        if (!state.customers.length) {
+            root.innerHTML = `<div class="text-gray-500 text-sm">Henüz müşteri yok.</div>`;
+            return;
+        }
+        root.innerHTML = state.customers.map(c => `
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="font-semibold text-gray-900">${c.fullName}</div>
+                        <div class="text-sm text-gray-600">${c.email}</div>
+                        <div class="text-xs text-gray-500 mt-1">${c.phoneNumber || "telefon yok"} · ${fmtDate(c.createdAt)}</div>
+                    </div>
+                    <div class="space-x-2 flex-shrink-0">
+                        <button onclick="showSummary('${c.id}')"
+                                class="text-blue-600 hover:bg-blue-50 text-sm px-3 py-1 rounded border border-blue-600">Özet</button>
+                        <button onclick="deleteCustomer('${c.id}')"
+                                class="text-red-600 hover:bg-red-50 text-sm px-3 py-1 rounded border border-red-300">Sil</button>
+                    </div>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    function renderCustomerSelect() {
+        const sel = document.querySelector('#subscription-form select[name="customerId"]');
+        sel.innerHTML = `<option value="">Seçin...</option>` +
+            state.customers.map(c => `<option value="${c.id}">${c.fullName}</option>`).join("");
+    }
+
+    document.getElementById("customer-form").addEventListener("submit", async e => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const dto = Object.fromEntries(fd.entries());
+        if (!dto.phoneNumber) delete dto.phoneNumber;
+        try {
+            await api("POST", "/api/customers", dto);
+            e.target.reset();
+            showToast("Müşteri eklendi.", "success");
+            await loadCustomers();
+        } catch (err) {
+            showToast(err.message, "error");
+        }
+    });
+
+    async function deleteCustomer(id) {
+        if (!confirm("Müşteri ve tüm abonelikleri/ödemeleri silinecek. Emin misiniz?")) return;
+        try {
+            await api("DELETE", "/api/customers/" + id);
+            showToast("Müşteri silindi.", "success");
+            await Promise.all([loadCustomers(), loadSubscriptions(), loadPayments()]);
+        } catch (e) {
+            showToast(e.message, "error");
+        }
+    }
+
+    async function showSummary(id) {
+        try {
+            const s = await api("GET", `/api/customers/${id}/summary`);
+            const html = `
+                <div class="space-y-4">
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase">Müşteri</div>
+                        <div class="font-medium">${s.fullName} <span class="text-gray-500">·</span> ${s.email}</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase mb-1">Aktif abonelikler (${s.activeSubscriptionCount})</div>
+                        ${s.activeSubscriptions.length === 0 ? '<div class="text-gray-500 text-sm">Yok.</div>' :
+                            '<ul class="list-disc pl-5 space-y-1">' +
+                            s.activeSubscriptions.map(sub => `<li>${serviceTypeLabel[sub.serviceType] || sub.serviceType} — ${sub.providerName} (${sub.subscriptionNumber})</li>`).join("") +
+                            '</ul>'}
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase mb-1">Bu ay ödenmemiş</div>
+                        ${s.unpaidThisMonth.length === 0 ? '<div class="text-green-700 text-sm">Tümü ödenmiş ✓</div>' :
+                            '<ul class="list-disc pl-5 space-y-1 text-red-700">' +
+                            s.unpaidThisMonth.map(sub => `<li>${serviceTypeLabel[sub.serviceType] || sub.serviceType} — ${sub.providerName}</li>`).join("") +
+                            '</ul>'}
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase mb-1">Son ödemeler (${s.recentPayments.length})</div>
+                        ${s.recentPayments.length === 0 ? '<div class="text-gray-500 text-sm">Yok.</div>' :
+                            '<table class="w-full text-sm"><thead><tr class="text-left text-gray-600 border-b"><th class="py-1">Tarih</th><th>Dönem</th><th class="text-right">Tutar</th><th>Durum</th></tr></thead><tbody>' +
+                            s.recentPayments.map(p => `<tr class="border-b last:border-0"><td class="py-1">${fmtDate(p.paymentDate)}</td><td>${p.periodYear}/${String(p.periodMonth).padStart(2,'0')}</td><td class="text-right">${fmtMoney(p.amount)}</td><td>${statusBadge(p.status)}</td></tr>`).join("") +
+                            '</tbody></table>'}
+                    </div>
+                </div>`;
+            openModal("Müşteri Özeti", html);
+        } catch (e) {
+            showToast(e.message, "error");
+        }
+    }
+
+    // =========================================================================
+    // SUBSCRIPTIONS
+    // =========================================================================
+    async function loadSubscriptions() {
+        try {
+            state.subscriptions = await api("GET", "/api/subscriptions");
+            renderSubscriptions();
+            renderSubscriptionSelect();
+        } catch (e) {
+            showToast("Abonelikler yüklenemedi: " + e.message, "error");
+        }
+    }
+
+    function renderSubscriptions() {
+        const root = document.getElementById("subscriptions-list");
+        if (!state.subscriptions.length) {
+            root.innerHTML = `<div class="text-gray-500 text-sm">Henüz abonelik yok.</div>`;
+            return;
+        }
+        root.innerHTML = state.subscriptions.map(s => {
+            const customer = state.customers.find(c => c.id === s.customerId);
+            return `
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex justify-between items-start gap-3">
+                        <div class="min-w-0">
+                            <div class="font-semibold text-gray-900">
+                                ${serviceTypeLabel[s.serviceType] || s.serviceType} — ${s.providerName}
+                            </div>
+                            <div class="text-sm text-gray-600">No: ${s.subscriptionNumber}</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                Müşteri: ${customer ? customer.fullName : '<unknown>'} · ${statusBadge(s.status)} · ${fmtDate(s.createdAt)}
+                            </div>
+                        </div>
+                        <div class="space-x-1 flex-shrink-0 flex flex-wrap gap-1 justify-end">
+                            <button onclick="inquireDebt('${s.id}')"
+                                    class="text-blue-600 hover:bg-blue-50 text-xs px-2 py-1 rounded border border-blue-600">Borç Sorgula</button>
+                            <button onclick="payNow('${s.id}')"
+                                    class="bg-blue-600 text-white hover:bg-blue-700 text-xs px-2 py-1 rounded">Öde</button>
+                            <button onclick="deleteSubscription('${s.id}')"
+                                    class="text-red-600 hover:bg-red-50 text-xs px-2 py-1 rounded border border-red-300">Sil</button>
+                        </div>
+                    </div>
+                </div>`;
+        }).join("");
+    }
+
+    function renderSubscriptionSelect() {
+        const sel = document.querySelector('#payment-form select[name="subscriptionId"]');
+        sel.innerHTML = `<option value="">Seçin...</option>` +
+            state.subscriptions.map(s => {
+                const customer = state.customers.find(c => c.id === s.customerId);
+                const cName = customer ? customer.fullName : "?";
+                return `<option value="${s.id}">${s.providerName} (${cName})</option>`;
+            }).join("");
+    }
+
+    document.getElementById("subscription-form").addEventListener("submit", async e => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const dto = Object.fromEntries(fd.entries());
+        try {
+            await api("POST", "/api/subscriptions", dto);
+            e.target.reset();
+            showToast("Abonelik eklendi.", "success");
+            await loadSubscriptions();
+        } catch (err) {
+            showToast(err.message, "error");
+        }
+    });
+
+    async function deleteSubscription(id) {
+        if (!confirm("Abonelik ve tüm ödemeleri silinecek. Emin misiniz?")) return;
+        try {
+            await api("DELETE", "/api/subscriptions/" + id);
+            showToast("Abonelik silindi.", "success");
+            await Promise.all([loadSubscriptions(), loadPayments()]);
+        } catch (e) {
+            showToast(e.message, "error");
+        }
+    }
+
+    async function inquireDebt(id) {
+        try {
+            const d = await api("GET", `/api/subscriptions/${id}/debt-inquiry`);
+            const html = `
+                <div class="space-y-2">
+                    <div class="flex justify-between"><span class="text-gray-500">Tutar:</span><span class="font-semibold">${fmtMoney(d.amount)}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Son Ödeme:</span><span>${fmtDate(d.dueDate)}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Dönem:</span><span>${d.periodYear}/${String(d.periodMonth).padStart(2,'0')}</span></div>
+                    <div class="text-xs text-gray-400 mt-3">Mock servisten dönen değerler — her sorguda farklı olabilir.</div>
+                </div>`;
+            openModal("Borç Sorgu Sonucu", html);
+        } catch (e) {
+            showToast(e.message, "error");
+        }
+    }
+
+    async function payNow(id) {
+        const now = new Date();
+        const year = now.getUTCFullYear();
+        const month = now.getUTCMonth() + 1;
+        try {
+            const result = await api("POST", "/api/payments", {
+                subscriptionId: id,
+                periodYear: year,
+                periodMonth: month
+            });
+            const msg = `Ödeme ${result.status === "Success" ? "başarılı" : "BAŞARISIZ"} — ${fmtMoney(result.amount)}`;
+            showToast(msg, result.status === "Success" ? "success" : "error");
+            await loadPayments();
+        } catch (e) {
+            // 409 conflict mesajını da burası gösteriyor
+            showToast(e.message, "error");
+        }
+    }
+
+    // =========================================================================
+    // PAYMENTS
+    // =========================================================================
+    async function loadPayments() {
+        try {
+            state.payments = await api("GET", "/api/payments");
+            renderPayments();
+        } catch (e) {
+            showToast("Ödemeler yüklenemedi: " + e.message, "error");
+        }
+    }
+
+    function renderPayments() {
+        const root = document.getElementById("payments-list");
+        if (!state.payments.length) {
+            root.innerHTML = `<div class="text-gray-500 text-sm">Henüz ödeme yok.</div>`;
+            return;
+        }
+        root.innerHTML = state.payments.map(p => {
+            const sub = state.subscriptions.find(s => s.id === p.subscriptionId);
+            const subText = sub ? `${sub.providerName} (${sub.subscriptionNumber})` : "<silinmiş abonelik>";
+            return `
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-semibold text-gray-900">${fmtMoney(p.amount)}</div>
+                            <div class="text-sm text-gray-600">${subText}</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                Dönem: ${p.periodYear}/${String(p.periodMonth).padStart(2,'0')} ·
+                                Ödeme: ${fmtDate(p.paymentDate)}
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">${statusBadge(p.status)}</div>
+                    </div>
+                </div>`;
+        }).join("");
+    }
+
+    document.getElementById("payment-form").addEventListener("submit", async e => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const dto = {
+            subscriptionId: fd.get("subscriptionId"),
+            periodYear: Number(fd.get("periodYear")),
+            periodMonth: Number(fd.get("periodMonth"))
+        };
+        try {
+            const result = await api("POST", "/api/payments", dto);
+            e.target.reset();
+            const msg = `Ödeme ${result.status === "Success" ? "başarılı" : "BAŞARISIZ"} — ${fmtMoney(result.amount)}`;
+            showToast(msg, result.status === "Success" ? "success" : "error");
+            await loadPayments();
+        } catch (err) {
+            showToast(err.message, "error");
+        }
+    });
+
+    // =========================================================================
+    // Form default değerleri (bugünün dönemi)
+    // =========================================================================
+    (function setDefaults() {
+        const now = new Date();
+        document.querySelector('#payment-form input[name="periodYear"]').value = now.getUTCFullYear();
+        document.querySelector('#payment-form input[name="periodMonth"]').value = now.getUTCMonth() + 1;
+    })();
+
+    // =========================================================================
+    // İlk yükleme
+    // =========================================================================
+    (async function init() {
+        await loadCustomers();
+        await loadSubscriptions();
+        await loadPayments();
+    })();
+
+    // ESC ile modal kapatma
+    document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+</script>
+
+</body>
+</html>

@@ -4,6 +4,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using SubscriptionTracker.Api.Data;
+using SubscriptionTracker.Api.Middleware;
 using SubscriptionTracker.Api.Services;
 using SubscriptionTracker.Api.Services.External;
 
@@ -39,6 +40,10 @@ builder.Services.AddScoped<IPaymentGatewayService, MockPaymentGatewayService>();
 var app = builder.Build();
 
 // --- Pipeline ---
+
+// Global exception handler EN ÜSTTE — sonraki tüm middleware'lerden gelen
+// beklenmedik hataları yakalar.
+app.UseMiddleware<ExceptionHandlerMiddleware>();
 
 // Swagger her ortamda açık
 app.UseSwagger();
