@@ -10,4 +10,5 @@ public interface ICustomerService
     Task<List<CustomerResponseDto>> GetAllAsync();
     Task<CustomerResponseDto?> GetByIdAsync(Guid id);
     Task<bool> DeleteAsync(Guid id);
+    Task<CustomerSummaryDto?> GetSummaryAsync(Guid id);
 }

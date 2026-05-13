@@ -1,19 +1,23 @@
 // Subscription iş kuralları: yaratma (customer'ı doğrula), listeleme (opsiyonel customer filtresi),
-// tekil getirme, güncelleme, silme. Yeni abonelik default olarak Active.
+// tekil getirme, güncelleme, silme, borç sorgulama (debt inquiry).
+// Yeni abonelik default olarak Active.
 using Microsoft.EntityFrameworkCore;
 using SubscriptionTracker.Api.Data;
 using SubscriptionTracker.Api.Models.Dtos;
 using SubscriptionTracker.Api.Models.Entities;
+using SubscriptionTracker.Api.Services.External;
 
 namespace SubscriptionTracker.Api.Services;
 
 public class SubscriptionService : ISubscriptionService
 {
     private readonly AppDbContext _db;
+    private readonly IDebtInquiryService _debtInquiry;
 
-    public SubscriptionService(AppDbContext db)
+    public SubscriptionService(AppDbContext db, IDebtInquiryService debtInquiry)
     {
         _db = db;
+        _debtInquiry = debtInquiry;
     }
 
     public async Task<SubscriptionResponseDto?> CreateAsync(SubscriptionCreateDto dto)
@@ -82,6 +86,16 @@ public class SubscriptionService : ISubscriptionService
         _db.Subscriptions.Remove(subscription);
         await _db.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<DebtInfo?> GetDebtInquiryAsync(Guid subscriptionId)
+    {
+        var subscription = await _db.Subscriptions.FindAsync(subscriptionId);
+        if (subscription is null) return null;
+
+        // Mock external servise sor — abonelik numarası + servis tipi gönderiyoruz.
+        var debt = await _debtInquiry.GetDebtAsync(subscription.SubscriptionNumber, subscription.ServiceType);
+        return debt;
     }
 
     private static SubscriptionResponseDto ToDto(Subscription s) => new()

@@ -55,4 +55,14 @@ public class SubscriptionsController : ControllerBase
         if (!deleted) return NotFound(new { error = "Abonelik bulunamadı." });
         return NoContent();
     }
+
+    // Mock borç sorgulama — DebtInquiryService'i çağırır, abonelik için
+    // tutar + son ödeme tarihi + dönem döner.
+    [HttpGet("{id:guid}/debt-inquiry")]
+    public async Task<IActionResult> DebtInquiry(Guid id)
+    {
+        var debt = await _subscriptionService.GetDebtInquiryAsync(id);
+        if (debt is null) return NotFound(new { error = "Abonelik bulunamadı." });
+        return Ok(debt);
+    }
 }

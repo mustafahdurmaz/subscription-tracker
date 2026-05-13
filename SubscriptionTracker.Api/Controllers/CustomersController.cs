@@ -47,4 +47,13 @@ public class CustomersController : ControllerBase
         if (!deleted) return NotFound(new { error = "Müşteri bulunamadı." });
         return NoContent();
     }
+
+    // Müşteri özeti: aktif abonelikler + bu ay ödenmemişler + son 10 ödeme.
+    [HttpGet("{id:guid}/summary")]
+    public async Task<ActionResult<CustomerSummaryDto>> Summary(Guid id)
+    {
+        var summary = await _customerService.GetSummaryAsync(id);
+        if (summary is null) return NotFound(new { error = "Müşteri bulunamadı." });
+        return Ok(summary);
+    }
 }

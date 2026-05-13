@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using SubscriptionTracker.Api.Data;
 using SubscriptionTracker.Api.Services;
+using SubscriptionTracker.Api.Services.External;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+
+// Mock 3rd-party servisler. Production'da gerçek HTTP client implementasyonları gelir.
+builder.Services.AddScoped<IDebtInquiryService, MockDebtInquiryService>();
+builder.Services.AddScoped<IPaymentGatewayService, MockPaymentGatewayService>();
 
 var app = builder.Build();
 
