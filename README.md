@@ -199,15 +199,56 @@ Build adımı yok, Node gerekmiyor. Sayfa yüklendiğinde 3 sekmeli arayüz vani
 
 ## 8. AI Kullanımı
 
-Bu proje, sınırları net çizilmiş bir prompt üzerinden **Claude Code** (Anthropic CLI agent) ile pair-programming şeklinde geliştirildi. AI'ın rolü:
+Bu projede yapay zeka destekli geliştirme yaklaşımı bilinçli ve kontrollü şekilde uygulanmıştır.
 
-- **`CLAUDE.md`** anayasa olarak konumlandı (teknik kararlar, yasak listeler, klasör yapısı, davranış kuralları). Her oturumun başında okundu, bu prompt agent'ın "yıldızı" oldu.
-- Agent her aşamada plan paylaşıp onay aldı, sonra dosyaları yazıp her aşama sonunda `dotnet build` çalıştırdı. Build patlarsa devam etmedi.
-- Tasarım kararları (Result pattern vs exception, JsonStringEnumConverter, timestamptz, Swashbuckle eklenmesi gibi) agent tarafından gerekçeleriyle önerildi; nihai karar her zaman insanda kaldı.
-- Manuel düzeltme yapmamız gereken iki nokta:
-  1. .NET 10 webapi şablonunda Swashbuckle yok; built-in `AddOpenApi()` UI vermiyor → Swashbuckle eklendi.
-  2. Npgsql 6+ `Kind=Utc` DateTime'leri `timestamp without time zone` kolona yazamıyor → `OnModelCreating`'de tüm DateTime kolonları `timestamp with time zone` olarak işaretlendi.
-- Kod sahipliği geliştiricide: her dosya üst yorumda 2-3 cümlelik Türkçe özetle başlar, böylece sonradan tek başına okumak kolay.
+### Kullanılan Araç
+- **Claude Code** (Anthropic, Sonnet 4.6 modeli) — pair programming yaklaşımıyla
+
+### Nasıl Kontrol Ettim
+
+Projenin başında bir rehber doküman (CLAUDE.md) oluşturarak AI'a çalışma kuralları verdim:
+- Kullanılacak ve kullanılmayacak teknolojileri önceden belirledim
+- Her aşamada önce plan sunmasını, onay almadan kod yazmamasını istedim
+- Domain modelini, API endpoint'lerini ve klasör yapısını ben tasarladım
+- Build başarısız olursa devam etmemesini kurallaştırdım
+
+### Aşamalı Geliştirme
+
+Proje 4 aşamada geliştirildi:
+
+| Aşama | İçerik | Kontrol Noktası |
+|-------|--------|-----------------|
+| 1 | Proje iskeleti + Entity'ler + DbContext | dotnet build ✅, tablo yapısını PostgreSQL'de doğruladım |
+| 2 | DTO'lar + Service'ler + Controller'lar | dotnet build ✅, Swagger UI'da tüm endpoint'leri test ettim |
+| 3 | Mock servisler + Ödeme akışı + Özet endpoint | dotnet build ✅, ödeme akışını uçtan uca test ettim (başarılı, başarısız, tekrar ödeme engeli) |
+| 4 | Frontend + Middleware + README | dotnet build + run ✅, frontend'den tam demo akışı gerçekleştirdim |
+
+### AI Çıktılarını Nasıl Kontrol Ettim
+
+Her aşamada AI'ın ürettiği kodu şu şekillerde gözden geçirdim:
+
+- **Derleme kontrolü:** Her aşama sonunda `dotnet build` çalıştırıldı, hatasız derleme doğrulandı
+- **Çalışma zamanı testi:** `dotnet run` ile uygulamayı ayağa kaldırıp Swagger UI üzerinden her endpoint'i manuel test ettim
+- **Frontend doğrulaması:** Tarayıcıda müşteri oluşturma → abonelik ekleme → borç sorgulama → ödeme yapma → tekrar ödeme engeli → müşteri özeti akışını baştan sona test ettim
+- **Uç durum kontrolü:** Aynı dönem tekrar ödeme (409), olmayan müşteri/abonelik (404), gateway başarısızlığı (201 + Failed status) senaryolarını doğruladım
+- **Kod incelemesi:** Özellikle PaymentService'teki ödeme akışını satır satır inceledim — borç sorgulama → gateway → kaydetme sıralamasının doğruluğunu teyit ettim
+
+### Benim Verdiğim Teknik Kararlar
+
+| Konu | Alternatifler | Benim Kararım | Gerekçe |
+|------|--------------|----------------|---------|
+| Mimari | Clean Architecture (multi-project) vs tek proje | Tek proje, klasör tabanlı | Proje boyutuna uygun, review edilebilirlik yüksek |
+| DB şema yönetimi | EF Migrations vs EnsureCreated | EnsureCreated | Case scope'u için yeterli, gereksiz karmaşıklıktan kaçındım |
+| Gateway fail → HTTP kodu | 201 vs 422 | 201 + body'de "Failed" | Kayıt oluştu, RESTful mantığa uygun |
+| Period kontrolü | DB index vs service check | Service check | İş kuralının nerede yaşadığı açıkça görülsün |
+| Frontend framework | React vs vanilla JS | Vanilla JS + Tailwind CDN | Node kurulumu gerektirmez, build adımı yok |
+| Validation | FluentValidation vs Data Annotations | Data Annotations | Ekstra kütüphane yok, basit ve yeterli |
+| Mapping | AutoMapper vs manuel | Manuel mapping | Her satır açık, magic yok |
+| Error handling | Her yerde try-catch vs global middleware | Global ExceptionHandlerMiddleware | Kod temiz kalır, tek noktada yönetim |
+
+### AI Kullanımında Öğrendiğim Şey
+
+AI'ı "kod yazıcı" olarak değil, "pair programming partneri" olarak kullandım. En değerli katkısı syntax üretmek değil, her aşamada alternatif sunup beni karar vermeye zorlaması oldu. Örneğin Swashbuckle eklenmesi, DateTime-PostgreSQL uyumsuzluğu gibi .NET ekosistemine özgü sorunları AI tespit etti, ben çözüm yönünü onayladım.
 
 ---
 
