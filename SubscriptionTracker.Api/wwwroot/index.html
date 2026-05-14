@@ -396,6 +396,8 @@
                             </div>
                         </div>
                         <div class="space-x-1 flex-shrink-0 flex flex-wrap gap-1 justify-end">
+                            <button onclick="showPaymentHistory('${s.id}')"
+                                    class="text-gray-600 hover:bg-gray-50 text-xs px-2 py-1 rounded border border-gray-400">Ödeme Geçmişi</button>
                             <button onclick="inquireDebt('${s.id}')"
                                     class="text-blue-600 hover:bg-blue-50 text-xs px-2 py-1 rounded border border-blue-600">Borç Sorgula</button>
                             <button onclick="payNow('${s.id}')"
@@ -438,6 +440,33 @@
             await api("DELETE", "/api/subscriptions/" + id);
             showToast("Abonelik silindi.", "success");
             await Promise.all([loadSubscriptions(), loadPayments()]);
+        } catch (e) {
+            showToast(e.message, "error");
+        }
+    }
+
+    async function showPaymentHistory(subscriptionId) {
+        try {
+            const payments = await api("GET", `/api/payments?subscriptionId=${subscriptionId}`);
+            const sub = state.subscriptions.find(s => s.id === subscriptionId);
+            const title = sub ? `${sub.providerName} (${sub.subscriptionNumber})` : "Ödeme Geçmişi";
+            let html;
+            if (!payments.length) {
+                html = `<div class="text-gray-500 text-sm">Bu abonelik için henüz ödeme yok.</div>`;
+            } else {
+                html = `<table class="w-full text-sm">
+                    <thead><tr class="text-left text-gray-600 border-b">
+                        <th class="py-1">Tarih</th><th>Dönem</th><th class="text-right">Tutar</th><th>Durum</th>
+                    </tr></thead><tbody>` +
+                    payments.map(p => `<tr class="border-b last:border-0">
+                        <td class="py-1">${fmtDate(p.paymentDate)}</td>
+                        <td>${p.periodYear}/${String(p.periodMonth).padStart(2,'0')}</td>
+                        <td class="text-right">${fmtMoney(p.amount)}</td>
+                        <td>${statusBadge(p.status)}</td>
+                    </tr>`).join("") +
+                    `</tbody></table>`;
+            }
+            openModal(title, html);
         } catch (e) {
             showToast(e.message, "error");
         }
