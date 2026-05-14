@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using SubscriptionTracker.Api.Data;
 using SubscriptionTracker.Api.Middleware;
+using SubscriptionTracker.Api.Models.Entities;
 using SubscriptionTracker.Api.Services;
 using SubscriptionTracker.Api.Services.External;
 
@@ -67,6 +68,155 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+
+    // --- Seed Data ---
+    // Sadece Customers tablosu boşsa eklenir → her run'da tekrar etmez.
+    // Sunumda hazır veriyle açılış: 3 müşteri, 7 abonelik, 3 ödeme.
+    if (!db.Customers.Any())
+    {
+        var now = DateTime.UtcNow;
+
+        // Müşteriler
+        var ahmet = new Customer
+        {
+            Id = Guid.NewGuid(),
+            FullName = "Ahmet Yılmaz",
+            Email = "ahmet@email.com",
+            PhoneNumber = "5551234567",
+            CreatedAt = now
+        };
+        var elif = new Customer
+        {
+            Id = Guid.NewGuid(),
+            FullName = "Elif Kaya",
+            Email = "elif@email.com",
+            PhoneNumber = "5559876543",
+            CreatedAt = now
+        };
+        var mehmet = new Customer
+        {
+            Id = Guid.NewGuid(),
+            FullName = "Mehmet Demir",
+            Email = "mehmet@email.com",
+            PhoneNumber = "5554567890",
+            CreatedAt = now
+        };
+        db.Customers.AddRange(ahmet, elif, mehmet);
+
+        // Abonelikler
+        var ahmetElektrik = new Subscription
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = ahmet.Id,
+            ServiceType = ServiceType.Electricity,
+            ProviderName = "Boğaziçi Elektrik",
+            SubscriptionNumber = "BE-12345",
+            Status = SubscriptionStatus.Active,
+            CreatedAt = now
+        };
+        var ahmetInternet = new Subscription
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = ahmet.Id,
+            ServiceType = ServiceType.Internet,
+            ProviderName = "Türk Telekom",
+            SubscriptionNumber = "TT-99887",
+            Status = SubscriptionStatus.Active,
+            CreatedAt = now
+        };
+        var ahmetSu = new Subscription
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = ahmet.Id,
+            ServiceType = ServiceType.Water,
+            ProviderName = "İSKİ",
+            SubscriptionNumber = "ISK-44556",
+            Status = SubscriptionStatus.Active,
+            CreatedAt = now
+        };
+        var elifGsm = new Subscription
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = elif.Id,
+            ServiceType = ServiceType.Gsm,
+            ProviderName = "Vodafone",
+            SubscriptionNumber = "VF-11223",
+            Status = SubscriptionStatus.Active,
+            CreatedAt = now
+        };
+        var elifGaz = new Subscription
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = elif.Id,
+            ServiceType = ServiceType.NaturalGas,
+            ProviderName = "İGDAŞ",
+            SubscriptionNumber = "IG-77889",
+            Status = SubscriptionStatus.Active,
+            CreatedAt = now
+        };
+        var mehmetElektrik = new Subscription
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = mehmet.Id,
+            ServiceType = ServiceType.Electricity,
+            ProviderName = "Ayedaş",
+            SubscriptionNumber = "AY-33445",
+            Status = SubscriptionStatus.Active,
+            CreatedAt = now
+        };
+        var mehmetInternet = new Subscription
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = mehmet.Id,
+            ServiceType = ServiceType.Internet,
+            ProviderName = "Superonline",
+            SubscriptionNumber = "SO-66778",
+            Status = SubscriptionStatus.Inactive,
+            CreatedAt = now
+        };
+        db.Subscriptions.AddRange(
+            ahmetElektrik, ahmetInternet, ahmetSu,
+            elifGsm, elifGaz,
+            mehmetElektrik, mehmetInternet);
+
+        // Ödemeler — DateTime'lar Kind=Utc (timestamptz kolonlar bunu bekler).
+        db.Payments.AddRange(
+            new Payment
+            {
+                Id = Guid.NewGuid(),
+                SubscriptionId = ahmetElektrik.Id,
+                Amount = 245.50m,
+                PaymentDate = new DateTime(2026, 1, 15, 12, 0, 0, DateTimeKind.Utc),
+                PeriodYear = 2026,
+                PeriodMonth = 1,
+                Status = PaymentStatus.Success,
+                CreatedAt = now
+            },
+            new Payment
+            {
+                Id = Guid.NewGuid(),
+                SubscriptionId = ahmetElektrik.Id,
+                Amount = 312.80m,
+                PaymentDate = new DateTime(2026, 2, 15, 12, 0, 0, DateTimeKind.Utc),
+                PeriodYear = 2026,
+                PeriodMonth = 2,
+                Status = PaymentStatus.Success,
+                CreatedAt = now
+            },
+            new Payment
+            {
+                Id = Guid.NewGuid(),
+                SubscriptionId = elifGsm.Id,
+                Amount = 189.90m,
+                PaymentDate = new DateTime(2026, 1, 15, 12, 0, 0, DateTimeKind.Utc),
+                PeriodYear = 2026,
+                PeriodMonth = 1,
+                Status = PaymentStatus.Success,
+                CreatedAt = now
+            });
+
+        db.SaveChanges();
+    }
 }
 
 app.Run();
