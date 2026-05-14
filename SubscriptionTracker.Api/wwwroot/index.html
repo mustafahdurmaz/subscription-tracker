@@ -497,15 +497,17 @@
             return;
         }
         root.innerHTML = state.payments.map(p => {
-            const sub = state.subscriptions.find(s => s.id === p.subscriptionId);
-            const subText = sub ? `${sub.providerName} (${sub.subscriptionNumber})` : "<silinmiş abonelik>";
+            const customerName = p.customerName || "?";
+            const providerName = p.providerName || "?";
+            const subNumber = p.subscriptionNumber || "?";
             return `
                 <div class="bg-white rounded-lg shadow p-4">
                     <div class="flex justify-between items-start">
                         <div>
                             <div class="font-semibold text-gray-900">${fmtMoney(p.amount)}</div>
-                            <div class="text-sm text-gray-600">${subText}</div>
+                            <div class="text-sm text-gray-600">${providerName} (${subNumber})</div>
                             <div class="text-xs text-gray-500 mt-1">
+                                Müşteri: ${customerName} ·
                                 Dönem: ${p.periodYear}/${String(p.periodMonth).padStart(2,'0')} ·
                                 Ödeme: ${fmtDate(p.paymentDate)}
                             </div>

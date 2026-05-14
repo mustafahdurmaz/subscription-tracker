@@ -22,6 +22,9 @@ public class PaymentResponseDto
 {
     public Guid Id { get; set; }
     public Guid SubscriptionId { get; set; }
+    public string CustomerName { get; set; } = "";
+    public string ProviderName { get; set; } = "";
+    public string SubscriptionNumber { get; set; } = "";
     public decimal Amount { get; set; }
     public DateTime PaymentDate { get; set; }
     public int PeriodYear { get; set; }

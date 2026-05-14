@@ -28,8 +28,10 @@ public class PaymentService : IPaymentService
 
     public async Task<PaymentCreateResult> CreateAsync(PaymentCreateDto dto)
     {
-        // 1) Abonelik var mı?
-        var subscription = await _db.Subscriptions.FindAsync(dto.SubscriptionId);
+        // 1) Abonelik var mı? (Customer'ı da include — ToDto'da CustomerName gerekiyor.)
+        var subscription = await _db.Subscriptions
+            .Include(s => s.Customer)
+            .FirstOrDefaultAsync(s => s.Id == dto.SubscriptionId);
         if (subscription is null)
         {
             return new PaymentCreateResult(PaymentCreateOutcome.SubscriptionNotFound, null);
@@ -74,6 +76,9 @@ public class PaymentService : IPaymentService
             CreatedAt = DateTime.UtcNow
         };
 
+        // Navigation property'yi set et — ToDto'da CustomerName, ProviderName, SubscriptionNumber için.
+        payment.Subscription = subscription;
+
         _db.Payments.Add(payment);
         await _db.SaveChangesAsync();
 
@@ -93,13 +98,20 @@ public class PaymentService : IPaymentService
             query = query.Where(p => p.Subscription.CustomerId == customerId.Value);
         }
 
-        var list = await query.OrderByDescending(p => p.PaymentDate).ToListAsync();
+        var list = await query
+            .Include(p => p.Subscription)
+                .ThenInclude(s => s.Customer)
+            .OrderByDescending(p => p.PaymentDate)
+            .ToListAsync();
         return list.Select(ToDto).ToList();
     }
 
     public async Task<PaymentResponseDto?> GetByIdAsync(Guid id)
     {
-        var payment = await _db.Payments.FindAsync(id);
+        var payment = await _db.Payments
+            .Include(p => p.Subscription)
+                .ThenInclude(s => s.Customer)
+            .FirstOrDefaultAsync(p => p.Id == id);
         if (payment is null) return null;
         return ToDto(payment);
     }
@@ -108,6 +120,9 @@ public class PaymentService : IPaymentService
     {
         Id = p.Id,
         SubscriptionId = p.SubscriptionId,
+        CustomerName = p.Subscription?.Customer?.FullName ?? "",
+        ProviderName = p.Subscription?.ProviderName ?? "",
+        SubscriptionNumber = p.Subscription?.SubscriptionNumber ?? "",
         Amount = p.Amount,
         PaymentDate = p.PaymentDate,
         PeriodYear = p.PeriodYear,
