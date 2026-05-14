@@ -20,9 +20,18 @@ public class SubscriptionsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<SubscriptionResponseDto>> Create([FromBody] SubscriptionCreateDto dto)
     {
-        var created = await _subscriptionService.CreateAsync(dto);
-        if (created is null) return NotFound(new { error = "Müşteri bulunamadı." });
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        var result = await _subscriptionService.CreateAsync(dto);
+
+        return result.Outcome switch
+        {
+            SubscriptionCreateOutcome.Success
+                => CreatedAtAction(nameof(GetById), new { id = result.Subscription!.Id }, result.Subscription),
+            SubscriptionCreateOutcome.CustomerNotFound
+                => NotFound(new { error = "Müşteri bulunamadı." }),
+            SubscriptionCreateOutcome.DuplicateSubscriptionNumber
+                => Conflict(new { error = "Bu abonelik numarası zaten kayıtlı." }),
+            _ => StatusCode(500, new { error = "Beklenmeyen durum." })
+        };
     }
 
     [HttpGet]

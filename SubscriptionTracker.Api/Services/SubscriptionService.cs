@@ -20,11 +20,19 @@ public class SubscriptionService : ISubscriptionService
         _debtInquiry = debtInquiry;
     }
 
-    public async Task<SubscriptionResponseDto?> CreateAsync(SubscriptionCreateDto dto)
+    public async Task<SubscriptionCreateResult> CreateAsync(SubscriptionCreateDto dto)
     {
-        // Customer var mı? Yoksa null dön → controller 404 verir.
+        // Customer var mı?
         var customerExists = await _db.Customers.AnyAsync(c => c.Id == dto.CustomerId);
-        if (!customerExists) return null;
+        if (!customerExists)
+            return new SubscriptionCreateResult(SubscriptionCreateOutcome.CustomerNotFound, null);
+
+        // Aynı müşteride aynı abonelik numarası var mı?
+        var duplicateExists = await _db.Subscriptions
+            .AnyAsync(s => s.CustomerId == dto.CustomerId
+                        && s.SubscriptionNumber == dto.SubscriptionNumber);
+        if (duplicateExists)
+            return new SubscriptionCreateResult(SubscriptionCreateOutcome.DuplicateSubscriptionNumber, null);
 
         var subscription = new Subscription
         {
@@ -40,7 +48,7 @@ public class SubscriptionService : ISubscriptionService
         _db.Subscriptions.Add(subscription);
         await _db.SaveChangesAsync();
 
-        return ToDto(subscription);
+        return new SubscriptionCreateResult(SubscriptionCreateOutcome.Success, ToDto(subscription));
     }
 
     public async Task<List<SubscriptionResponseDto>> GetAllAsync(Guid? customerId)

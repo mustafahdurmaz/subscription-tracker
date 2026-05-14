@@ -4,9 +4,13 @@ using SubscriptionTracker.Api.Models.Dtos;
 
 namespace SubscriptionTracker.Api.Services;
 
+// Çok-sonuçlu CreateAsync için Result pattern (PaymentService'teki gibi).
+public enum CustomerCreateOutcome { Success, EmailAlreadyExists }
+public record CustomerCreateResult(CustomerCreateOutcome Outcome, CustomerResponseDto? Customer);
+
 public interface ICustomerService
 {
-    Task<CustomerResponseDto> CreateAsync(CustomerCreateDto dto);
+    Task<CustomerCreateResult> CreateAsync(CustomerCreateDto dto);
     Task<List<CustomerResponseDto>> GetAllAsync();
     Task<CustomerResponseDto?> GetByIdAsync(Guid id);
     Task<bool> DeleteAsync(Guid id);

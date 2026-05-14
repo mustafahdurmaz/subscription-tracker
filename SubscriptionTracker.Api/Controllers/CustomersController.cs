@@ -21,8 +21,16 @@ public class CustomersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<CustomerResponseDto>> Create([FromBody] CustomerCreateDto dto)
     {
-        var created = await _customerService.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        var result = await _customerService.CreateAsync(dto);
+
+        return result.Outcome switch
+        {
+            CustomerCreateOutcome.Success
+                => CreatedAtAction(nameof(GetById), new { id = result.Customer!.Id }, result.Customer),
+            CustomerCreateOutcome.EmailAlreadyExists
+                => Conflict(new { error = "Bu e-posta adresiyle kayıtlı bir müşteri zaten var." }),
+            _ => StatusCode(500, new { error = "Beklenmeyen durum." })
+        };
     }
 
     [HttpGet]

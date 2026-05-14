@@ -17,8 +17,15 @@ public class CustomerService : ICustomerService
         _db = db;
     }
 
-    public async Task<CustomerResponseDto> CreateAsync(CustomerCreateDto dto)
+    public async Task<CustomerCreateResult> CreateAsync(CustomerCreateDto dto)
     {
+        // Duplicate email kontrolü — case-insensitive, trimmed.
+        var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+        var emailExists = await _db.Customers
+            .AnyAsync(c => c.Email.ToLower() == normalizedEmail);
+        if (emailExists)
+            return new CustomerCreateResult(CustomerCreateOutcome.EmailAlreadyExists, null);
+
         var customer = new Customer
         {
             Id = Guid.NewGuid(),
@@ -31,7 +38,7 @@ public class CustomerService : ICustomerService
         _db.Customers.Add(customer);
         await _db.SaveChangesAsync();
 
-        return ToDto(customer);
+        return new CustomerCreateResult(CustomerCreateOutcome.Success, ToDto(customer));
     }
 
     public async Task<List<CustomerResponseDto>> GetAllAsync()
