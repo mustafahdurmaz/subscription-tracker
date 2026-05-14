@@ -31,6 +31,9 @@ public class PaymentsController : ControllerBase
             PaymentCreateOutcome.SubscriptionNotFound
                 => NotFound(new { error = "Abonelik bulunamadı." }),
 
+            PaymentCreateOutcome.FuturePeriodNotAllowed
+                => BadRequest(new { error = "Gelecek dönem için ödeme yapılamaz." }),
+
             PaymentCreateOutcome.PeriodAlreadyPaid
                 => Conflict(new { error = "Bu dönem için zaten başarılı bir ödeme var." }),
 

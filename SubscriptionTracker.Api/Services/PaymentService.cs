@@ -35,7 +35,12 @@ public class PaymentService : IPaymentService
             return new PaymentCreateResult(PaymentCreateOutcome.SubscriptionNotFound, null);
         }
 
-        // 2) Aynı dönem için Success bir ödeme zaten var mı?
+        // 2) Gelecek dönem kontrolü — henüz gelmemiş ay için ödeme yapılamaz.
+        var now = DateTime.UtcNow;
+        if (dto.PeriodYear > now.Year || (dto.PeriodYear == now.Year && dto.PeriodMonth > now.Month))
+            return new PaymentCreateResult(PaymentCreateOutcome.FuturePeriodNotAllowed, null);
+
+        // 3) Aynı dönem için Success bir ödeme zaten var mı?
         //    (CLAUDE.md kritik iş kuralı — DB index yok, burada zorluyoruz.
         //     Failed kayıtlar yeniden denemeyi engellemez, sadece Success bloklar.)
         var alreadyPaid = await _db.Payments.AnyAsync(p =>

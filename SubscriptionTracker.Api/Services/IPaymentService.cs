@@ -9,6 +9,7 @@ public enum PaymentCreateOutcome
 {
     Success,
     SubscriptionNotFound,
+    FuturePeriodNotAllowed,
     PeriodAlreadyPaid
 }
 
